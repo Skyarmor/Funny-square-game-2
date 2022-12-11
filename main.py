@@ -14,8 +14,8 @@
 import pygame
 from pygame import mixer
 pygame.init()
-height = 500
-length = 250
+height = 600
+length = 600
 scr = pygame.display.set_mode((length,height))
 running = True
 
@@ -84,6 +84,9 @@ buttonhorizontalunpressed = pygame.image.load("button unpressed.png")
 buttonhorizontalunpressedX = 900
 buttonhorizontalunpressedY = 900
 
+menuwarning = pygame.image.load("warning message.png")
+mainmenu = pygame.image.load("menu 2.png")
+
 face = pygame.image.load("goofy ahh face.png")
 
 
@@ -99,6 +102,10 @@ dashtimer = 0
 dashspeed = 6
 bounce = 1
 dead = 0
+menuisopen = 1
+warningisopen = 1
+mouseX, mouseY = 9000,9000
+clicking = False
 
 pressing = [0,0,0,0,0,0,0,0,0,0]
 fps = 60
@@ -106,12 +113,20 @@ pygame.display.set_caption("Funny square game :)")
 clock = pygame.time.Clock()
 mixer.music.load("Skyarmor - game track 4.mp3")
 mixer.music.play(-1)
+
+  
 while running:
+  mouseX,mouseY = pygame.mouse.get_pos()
   scr = pygame.display.set_mode((length,height))
   clock.tick(fps)
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       running = False
+      #mouse press detector
+    if (event.type == pygame.MOUSEBUTTONDOWN):
+      clicking = True
+    if (event.type == pygame.MOUSEBUTTONUP):
+      clicking = False
       #KEY PRESS DETECTOR
     if event.type == pygame.KEYDOWN:
 #key detection
@@ -146,7 +161,6 @@ while running:
         pressing[4] = 0
       if event.key == pygame.K_SPACE:
         pressingdash = 0
-        
     if pressingdash == 1 and pressing[1] == "up" and playercolor == green:
       playerYvelocity -= dashspeed
       dashthingy = 1
@@ -266,25 +280,31 @@ while running:
   if (buttonhorizontalunpressedX - playercenterX <= 50 and buttonhorizontalunpressedX - playercenterX >= -50 and buttonhorizontalunpressedY - playercenterY <= 50 and buttonhorizontalunpressedY - playercenterY >= -50):
     buttonhorizontalpressedX = buttonhorizontalunpressedX
     buttonhorizontalpressedY = buttonhorizontalunpressedY
+#warning menu button clicking
+  if (clicking == True and mouseX >= 35 and mouseX <= 560 and mouseY >= 480 and mouseY <= 505 and warningisopen == 1):
+    warningisopen = 0
+  if (clicking == True and mouseX >= 180 and mouseX <= 370 and mouseY >= 380 and mouseY <= 430 and warningisopen == 0 and menuisopen == 1):
+    menuisopen = 0
+  
 
 #levelloading
-  if (level == 0.5):
+  if (level == 0.5 and menuisopen == 0):
     teleporterX =100; teleporterY =400
     playercenterX=400;playercenterY =0
     height = 500; length = 250
     level = 1
-  if (level == 1.5):
+  elif (level == 1.5):
     teleporterX =100; teleporterY = 75
     playercenterX=100; playercenterY = 400
     height = 500; length = 250
     level = 2
-  if (level == 2.5):
+  elif (level == 2.5):
     playercenterX = 100; playercenterY = 75
     teleporterX = 435; teleporterY = 75
     wallverticalX =270; wallverticalY =100
     height = 250;length = 500
     level = 3
-  if (level == 3.5):
+  elif (level == 3.5):
     wallverticalX =270; wallverticalY =100
     wallhorizontalX = 100; wallhorizontalY = 270
     playercenterX = 435; playercenterY = 75
@@ -292,7 +312,7 @@ while running:
     height = 500
     length = 500
     level = 4
-  if (level == 4.5):
+  elif (level == 4.5):
     doorverticalX = 400; doorverticalY = -50
     playercenterX = 10; playercenterY = 25
     teleporterX = 500; teleporterY = 25
@@ -300,7 +320,7 @@ while running:
     length = 800
     buttonunpressedX = 280; buttonunpressedY = 25
     level = 5
-  if (level == 5.5):
+  elif (level == 5.5):
     doorverticalX = 900
     length = 100
     height = 600
@@ -310,7 +330,7 @@ while running:
     doorhorizontalX= -20; doorhorizontalY = 500
     buttonhorizontalunpressedX = 20; buttonhorizontalunpressedY = 450
     level = 6
-  if (level == 6.5):
+  elif (level == 6.5):
     length = 500
     height = 500
     playercenterX = 10
@@ -319,7 +339,10 @@ while running:
     teleporterY = 6
     level = 7
 
-  print(playercenterX, playercenterY)
+  if (menuisopen == 0):
+    print(playercenterX, playercenterY)
+  if (menuisopen == 1):
+    print(mouseX, mouseY, warningisopen, menuisopen)
   scr.fill((white))
     
   
@@ -335,5 +358,9 @@ while running:
   scr.blit(doorvertical,(doorverticalX,doorverticalY))
   scr.blit(doorhorizontal, (doorhorizontalX,doorhorizontalY))
   scr.blit(teleporter, (teleporterX, teleporterY))
+  if (menuisopen == 1):
+    scr.blit(mainmenu,(0,0))
+  if (warningisopen == 1):
+    scr.blit(menuwarning, (0,0))
   pygame.display.flip()
 pygame.quit()
