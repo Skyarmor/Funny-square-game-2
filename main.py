@@ -1,4 +1,3 @@
-
 ########                                   ########
 ####                                           ####
 ##            Funny square game                  ##
@@ -12,12 +11,52 @@
 
 #setting up pygame
 import pygame
+import random
 from pygame import mixer
 pygame.init()
 height = 600
 length = 600
 scr = pygame.display.set_mode((length,height))
 running = True
+#defining the particles that trail behind you when you dash 
+class dashparticle():
+  def __init__(self,x,y):
+    self.x = x
+    self.y = y
+    self.size = 50
+    self.color = cyan
+    self.alive = 1
+  def draw(self,scr):
+    if (self.alive == 1):
+      self.size -= 1.5
+      self.x += 0.5
+      self.y += 0.5
+      pygame.draw.rect(scr,self.color,pygame.Rect((self.x,self.y),(self.size, self.size)))
+    if (self.size < 0):
+      self.alive = 0
+    
+class deathparticle():
+  def __init__(self,xvel,yvel, color, size):
+    self.color = color
+    self.size = size
+    self.x =playercenterX + 25 - self.size
+    self.y = playercenterY + 25 - self.size
+    self.xvel = xvel
+    self.yvel = yvel
+    self.alive = 1
+  def draw(self,scr):
+    if (self.alive == 1):
+      self.x += self.xvel
+      self.y += self.yvel
+      self.size -= 0.5
+      pygame.draw.rect(scr,self.color,pygame.Rect((self.x,self.y),(self.size, self.size)))
+    if self.size < 0:
+      self.alive = 0
+    
+    
+dashparticles = []
+deathparticles = []
+
 
 #creating a library of preset colors to use
 white = (255,255,255)
@@ -36,6 +75,14 @@ playercenterX = 400
 playercenterY = 0
 playerXvelocity = 0
 playerYvelocity = 0
+
+#enemy1data
+enemy1 = pygame.image.load('enemy sprite.png')
+enemy1X = 9000
+enemy1Y = 9000
+enemy1Xvelocity = 0
+enemy1Yvelocity = 0
+
 #floor pattern
 floor1 = pygame.image.load("floor1.png")
 floor1X = 0
@@ -84,6 +131,10 @@ buttonhorizontalunpressed = pygame.image.load("button unpressed.png")
 buttonhorizontalunpressedX = 900
 buttonhorizontalunpressedY = 900
 
+dashcrystal = pygame.image.load("dashdiamond.png")
+dashcrystalX = 900
+dashcrystalY = 900
+
 menuwarning = pygame.image.load("warning message.png")
 mainmenu = pygame.image.load("menu 2.png")
 
@@ -106,16 +157,80 @@ menuisopen = 1
 warningisopen = 1
 mouseX, mouseY = 9000,9000
 clicking = False
+hasdash = 0
 
 pressing = [0,0,0,0,0,0,0,0,0,0]
-fps = 60
+enemy1pressing = [0,0,0,0,0,0,0,0,0,0]
+enemy1active = 0
+fps = 40
 pygame.display.set_caption("Funny square game :)")
 clock = pygame.time.Clock()
 mixer.music.load("Skyarmor - game track 4.mp3")
 mixer.music.play(-1)
+def restart():
+  global level
+  global playercolor
+  global playerXvelocity
+  global playerYvelocity
+  playerXvelocity = 0
+  playerYvelocity = 0
+  global buttonpressedX
+  global buttonhorizontalpressedX
+  buttonpressedX = 9000
+  buttonhorizontalpressedX = 9000
+  level -= 0.5
+  playercolor = green
+def enemy1AI():
+  global enemy1Xvelocity
+  global enemy1Yvelocity
+  global enemy1X
+  global enemy1Y
+  global enemy1pressing
+  if (playercenterX > enemy1X):
+    enemy1Xvelocity += acceleration
+    enemy1pressing[4] = "right"
+  else:
+    enemy1pressing[4] = 0
+  if(playercenterX < enemy1X):
+    enemy1Xvelocity -= acceleration
+    enemy1pressing[3] = "left"
+  else:
+    enemy1pressing[3] = 0
+  if(playercenterY > enemy1Y):
+    enemy1Yvelocity += acceleration
+    enemy1pressing[2] = "down"
+  else:
+    enemy1pressing[2] = 0
+  if(playercenterY < enemy1Y):
+    enemy1Yvelocity -= acceleration
+    enemy1pressing[1] = "up"
+  else:
+    enemy1pressing[1] = 0
+def playerdeath():
+  global menuisopen
+  global level
+  for i in range(80):
+    deathparticles.append(deathparticle(random.randint(-25,25), random.randint(-25,25), green, 10))
+  restart()
+def enemydeath():
+  global enemy1X
+  global enemy1Y
+  global enemy1active
+  global playercolor
+  for i in range(80):
+    deathparticles.append(deathparticle(random.randint(-25,25), random.randint(-25,25), red, 10))
+  enemy1X = 9000
+  enemy1active = 0
+  playercolor = green
+  
+
+
+    
 
   
 while running:
+  if (enemy1active):
+    enemy1AI()
   mouseX,mouseY = pygame.mouse.get_pos()
   scr = pygame.display.set_mode((length,height))
   clock.tick(fps)
@@ -140,10 +255,11 @@ while running:
         pressing[3] = "left"
       elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
         pressing[4] = "right"
-      if event.key == pygame.K_SPACE:
+      if event.key == pygame.K_SPACE and hasdash == 1:
         pressingdash = 1
       if (event.key == pygame.K_r or dead == 1):
         buttonpressedX = 9000
+        enemy1active = 0
         level -= 0.5
         playercolor = green
         playerXvelocity = 0
@@ -185,6 +301,8 @@ while running:
     playercolor = green
   if (playercolor == cyan):
     bounce = 10
+    dashparticles.append(dashparticle(playercenterX,playercenterY))
+    
   else:
     bounce = 2
   if (buttonpressedX == buttonunpressedX and buttonpressedY == buttonunpressedY):
@@ -213,6 +331,17 @@ while running:
     playerYvelocity -= playerYvelocity / friction
   playercenterY += playerYvelocity
   playercenterX += playerXvelocity
+#enemy version
+  if (enemy1pressing[3] == 0):
+    enemy1Xvelocity -= enemy1Xvelocity / friction
+  if (enemy1pressing[4] == 0):
+    enemy1Xvelocity -= enemy1Xvelocity / friction
+  if (enemy1pressing[2] == 0):
+    enemy1Yvelocity -= enemy1Yvelocity / friction
+  if (enemy1pressing[1] == 0):
+    enemy1Yvelocity -= enemy1Yvelocity / friction
+  enemy1Y += enemy1Yvelocity
+  enemy1X += enemy1Xvelocity
 
   if (playercenterX >= length - 50):
     playerXvelocity += -bounce
@@ -222,6 +351,15 @@ while running:
     playerYvelocity += -bounce
   if (playercenterY <= 0):
     playerYvelocity += bounce
+    
+  if (enemy1X >= length - 50 and enemy1active):
+    enemy1Xvelocity += -bounce
+  if (enemy1X <= 0 and enemy1active):
+    enemy1Xvelocity += bounce
+  if (enemy1Y >= height - 50 and enemy1active):
+    enemy1Yvelocity += -bounce
+  if (enemy1Y <= 0 and enemy1active):
+    enemy1Yvelocity += bounce
   
 
 #wallhorizontalcollisions
@@ -273,6 +411,34 @@ while running:
     buttonpressedX += 9000
     buttonhorizontalpressedX = 9000
     playerXvelocity = 0; playerYvelocity = 0; playercolor = green
+  if (dashcrystalX - playercenterX <= 50 and dashcrystalX - playercenterX >= -50 and dashcrystalY - playercenterY <= 50 and dashcrystalY - playercenterY >= -50):
+    hasdash = 1
+    dashcrystalX = 9000
+    for i in range(40):
+      deathparticles.append(deathparticle(random.randint(-5,5), random.randint(-5,5), cyan, 20))
+#enemy collision
+  if (enemy1X - playercenterX <= 50 and enemy1X - playercenterX >= -50 and enemy1Y - playercenterY <= 50 and enemy1Y - playercenterY >= -50 and enemy1active and playercolor != cyan):
+    playerdeath()
+  elif(enemy1X - playercenterX <= 50 and enemy1X - playercenterX >= -50 and enemy1Y - playercenterY <= 50 and enemy1Y - playercenterY >= -50 and enemy1active and playercolor == cyan):
+    enemydeath()
+#wall vertical enemy collision
+  if (wallverticalY - enemy1Y <= 50 and wallverticalY - enemy1Y >= -800 and wallverticalX - enemy1X <= 50 and wallverticalX - enemy1X >= 15):
+    enemy1Xvelocity -= bounce
+  if (wallverticalY - enemy1Y <= 50 and wallverticalY - enemy1Y >= -800 and wallverticalX - enemy1X >= -50 and wallverticalX - enemy1X <= -30):
+    enemy1Xvelocity += bounce
+  if (wallverticalX - enemy1X <= 50 and wallverticalX - enemy1X >= -50 and wallverticalY - enemy1Y <= 50 and wallverticalY - enemy1Y >= -25):
+    enemy1Yvelocity -= bounce
+  if (wallverticalX - enemy1X <= 50 and wallverticalX - enemy1X >= -50 and wallverticalY - enemy1Y >= -800 and wallverticalY - enemy1Y <= -775):
+    enemy1Yvelocity += bounce
+#door vertical enemy collision
+  if (doorverticalY - enemy1Y <= 50 and doorverticalY - enemy1Y >= -800 and doorverticalX - enemy1X <= 50 and doorverticalX - enemy1X >= 15):
+    enemy1Xvelocity -= bounce
+  if (doorverticalY - enemy1Y <= 50 and doorverticalY - enemy1Y >= -800 and doorverticalX - enemy1X >= -50 and doorverticalX - enemy1X <= -30):
+    enemy1Xvelocity += bounce
+  if (doorverticalX - enemy1X <= 50 and doorverticalX - enemy1X >= -50 and doorverticalY - enemy1Y <= 50 and doorverticalY - enemy1Y >= -25):
+    enemy1Yvelocity -= bounce
+  if (doorverticalX - enemy1X <= 50 and doorverticalX - enemy1X >= -50 and doorverticalY - enemy1Y >= -800 and doorverticalY - enemy1Y <= -775):
+    enemy1Yvelocity += bounce
 #buttonpressing
   if (buttonunpressedX - playercenterX <= 50 and buttonunpressedX - playercenterX >= -50 and buttonunpressedY - playercenterY <= 50 and buttonunpressedY - playercenterY >= -50):
     buttonpressedX = buttonunpressedX
@@ -285,6 +451,13 @@ while running:
     warningisopen = 0
   if (clicking == True and mouseX >= 180 and mouseX <= 370 and mouseY >= 380 and mouseY <= 430 and warningisopen == 0 and menuisopen == 1):
     menuisopen = 0
+    level = 0.5
+    enemy1active = 0
+  if (menuisopen == 1):
+    height = 600
+    width = 600
+  if (enemy1active == False):
+    enemy1X = 9000
   
 
 #levelloading
@@ -337,7 +510,74 @@ while running:
     playercenterY = 450
     teleporterX = 447
     teleporterY = 6
+    enemy1X = 337; enemy1Y = 100
+    enemy1active = 1
     level = 7
+  elif(level == 7.5):
+    length = 500
+    height = 250
+    playercenterX = 447
+    playercenterY = 6
+    teleporterX = 0
+    teleporterY = 126
+    enemy1X = 0; enemy1Y = 126
+    enemy1active = 1
+    level = 8
+  elif(level == 8.5):
+    length =400
+    height = 600
+    playercenterX = 0
+    playercenterY = 176
+    enemy1X = 0
+    enemy1Y = 26
+    enemy1active = 1
+    wallverticalX = 150
+    wallverticalY = -265
+    teleporterX = 310
+    teleporterY = 44
+    level = 9
+  elif(level == 9.5):
+    length =400
+    height =600
+    doorverticalX = 150
+    doorverticalY = -50
+    playercenterX = 310
+    playercenterY = 44
+    buttonunpressedX = 240
+    buttonunpressedY = 430
+    teleporterX=0
+    teleporterY = 500
+    enemy1X = 0
+    enemy1Y = 176
+    enemy1active = 1
+    level = 10
+  elif(level == 10.5):
+    height = 100
+    length = 600
+    playercenterX =0
+    playercenterY = 0
+    enemy1active = 0
+    teleporterX = 550
+    teleporterY = 27
+    hasdash = 0
+    dashcrystalX = 313
+    dashcrystalY = 20
+    level = 11
+  elif(level == 11.5):
+    height =100
+    length = 600
+    playercenterX = 550
+    playercenterY = 27
+    teleporterX = 0
+    teleporterY = 0
+    hasdash = 1
+    enemy1active = 1
+    enemy1X = 0
+    enemy1Y = 0
+    level = 12
+  elif(level == 12.5):
+    height =600
+    length = 600
 
   if (menuisopen == 0):
     print(playercenterX, playercenterY)
@@ -351,13 +591,19 @@ while running:
   scr.blit(buttonpressed, (buttonpressedX, buttonpressedY))
   scr.blit(buttonhorizontalunpressed,(buttonhorizontalunpressedX,buttonhorizontalunpressedY))
   scr.blit(buttonhorizontalpressed, (buttonhorizontalpressedX, buttonhorizontalpressedY))
+  for dashparticle_ in dashparticles:
+    dashparticle_.draw(scr)
+  for deathparticle_ in deathparticles:
+    deathparticle_.draw(scr)
   pygame.draw.rect(scr,playercolor,(playercenterX,playercenterY,50,50))
   scr.blit(face,(playercenterX, playercenterY))
+  scr.blit(enemy1,(enemy1X,enemy1Y))
   scr.blit(wallhorizontal,(wallhorizontalX,wallhorizontalY))
   scr.blit(wallvertical, (wallverticalX, wallverticalY))
   scr.blit(doorvertical,(doorverticalX,doorverticalY))
   scr.blit(doorhorizontal, (doorhorizontalX,doorhorizontalY))
   scr.blit(teleporter, (teleporterX, teleporterY))
+  scr.blit(dashcrystal, (dashcrystalX, dashcrystalY))
   if (menuisopen == 1):
     scr.blit(mainmenu,(0,0))
   if (warningisopen == 1):

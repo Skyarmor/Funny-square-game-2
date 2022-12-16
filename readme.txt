@@ -1,0 +1,1 @@
+make sure you have pygame and python installed. If you don't know how to install them... then google it I guess lmao
