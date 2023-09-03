@@ -107,7 +107,7 @@ class frictiontile():
   def draw(self,scr):
     global playercenterX
     global playercenterY
-    global friction
+    global frictio
     global onfriction
     if (self.x - playercenterX <= 50 and self.x - playercenterX >= -50 and self.y - playercenterY <= 50 and self.y - playercenterY >= -50 and self.alive == 1):
       onfriction = 1
@@ -559,7 +559,6 @@ while running:
   if(golemenemyactive):
     golemAI()
   mouseX,mouseY = pygame.mouse.get_pos()
-  scr = pygame.display.set_mode((length,height))
   clock.tick(fps)
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
