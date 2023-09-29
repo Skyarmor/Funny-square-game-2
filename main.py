@@ -1195,4 +1195,5 @@ while running:
     scr.blit(endscreen, (0,0))
   pygame.display.flip()
   pygame.display.update()
+scr = pygame.display.set_mode((length,height))
 pygame.quit()
